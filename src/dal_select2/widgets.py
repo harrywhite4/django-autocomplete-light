@@ -9,7 +9,6 @@ from dal.widgets import (
 
 from django import forms
 from django.conf import settings
-from django.contrib.admin.widgets import SELECT2_TRANSLATIONS
 from django.utils import six
 from django.utils import translation
 
@@ -32,10 +31,26 @@ class Select2WidgetMixin(object):
             lang_code = translation.to_locale(lang_code).replace('_', '-')
         return lang_code
 
+    def get_translations(self):
+        try:
+            from django.contrib.admin.widgets import SELECT2_TRANSLATIONS
+        except ImportError:
+            # Required for django <= 1.11
+            SELECT2_TRANSLATIONS = {x.lower(): x for x in [
+                'ar', 'az', 'bg', 'ca', 'cs', 'da', 'de', 'el', 'en', 'es', 'et',
+                'eu', 'fa', 'fi', 'fr', 'gl', 'he', 'hi', 'hr', 'hu', 'id', 'is',
+                'it', 'ja', 'km', 'ko', 'lt', 'lv', 'mk', 'ms', 'nb', 'nl', 'pl',
+                'pt-BR', 'pt', 'ro', 'ru', 'sk', 'sr-Cyrl', 'sr', 'sv', 'th',
+                'tr', 'uk', 'vi',
+            ]}
+            SELECT2_TRANSLATIONS.update({'zh-hans': 'zh-CN', 'zh-hant': 'zh-TW'})
+
+        return SELECT2_TRANSLATIONS
+
     @property
     def media(self):
         extra = '' if settings.DEBUG else '.min'
-        i18n_name = SELECT2_TRANSLATIONS.get(translation.get_language())
+        i18n_name = self.get_translations().get(translation.get_language())
         i18n_file = ('admin/js/vendor/select2/i18n/%s.js' % i18n_name,) if i18n_name else ()
         return forms.Media(
             js=(
