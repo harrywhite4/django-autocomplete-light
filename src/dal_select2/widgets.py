@@ -12,6 +12,10 @@ from django.conf import settings
 from django.utils import six
 from django.utils import translation
 
+try:
+    from django.contrib.admin.widgets import SELECT2_TRANSLATIONS
+except ImportError:
+    SELECT2_TRANSLATIONS = {}
 
 class Select2WidgetMixin(object):
     """Mixin for Select2 widgets."""
@@ -31,31 +35,21 @@ class Select2WidgetMixin(object):
             lang_code = translation.to_locale(lang_code).replace('_', '-')
         return lang_code
 
-    def get_translations(self):
-        try:
-            from django.contrib.admin.widgets import SELECT2_TRANSLATIONS
-        except ImportError:
-            # Required for django <= 1.11
-            SELECT2_TRANSLATIONS = {x.lower(): x for x in [
-                'ar', 'az', 'bg', 'ca', 'cs', 'da', 'de', 'el', 'en', 'es', 'et',
-                'eu', 'fa', 'fi', 'fr', 'gl', 'he', 'hi', 'hr', 'hu', 'id', 'is',
-                'it', 'ja', 'km', 'ko', 'lt', 'lv', 'mk', 'ms', 'nb', 'nl', 'pl',
-                'pt-BR', 'pt', 'ro', 'ru', 'sk', 'sr-Cyrl', 'sr', 'sv', 'th',
-                'tr', 'uk', 'vi',
-            ]}
-            SELECT2_TRANSLATIONS.update({'zh-hans': 'zh-CN', 'zh-hant': 'zh-TW'})
-
-        return SELECT2_TRANSLATIONS
-
     @property
     def media(self):
         extra = '' if settings.DEBUG else '.min'
         i18n_name = self.get_translations().get(translation.get_language())
         i18n_file = ('admin/js/vendor/select2/i18n/%s.js' % i18n_name,) if i18n_name else ()
+
+        if SELECT2_TRANSLATIONS:
+            select2_prefix = 'admin/js/vendor/'
+        else:
+            select2_prefix = 'autocomplete_light/vendor/'
+
         return forms.Media(
             js=(
                 'admin/js/vendor/jquery/jquery%s.js' % extra,
-                'admin/js/vendor/select2/select2.full%s.js' % extra,
+                select2_prefix + 'select2/select2.full%s.js' % extra,
             ) + i18n_file + (
                 'admin/js/jquery.init.js',
                 'autocomplete_light/jquery.init.js',
@@ -66,7 +60,7 @@ class Select2WidgetMixin(object):
             ),
             css={
                 'screen': (
-                    'admin/css/vendor/select2/select2%s.css' % extra,
+                    select2_prefix + 'select2/select2%s.css' % extra,
                     'admin/css/autocomplete.css',
                     'autocomplete_light/select2.css',
                 ),
